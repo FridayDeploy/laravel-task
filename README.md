@@ -66,3 +66,8 @@ Po wrzuceniu projektu do repo gitlaba on sam znajdzie plik `.gitlab-ci.yml` i do
 przy każdym mergu/commicie do mastera. Testowałem na swoim koncie i każdy job działa. Nie robiłem tylko wypychania 
 kontenerów do rejestru, ale robi się to za pomocą `docker push` gdzie potem na serwerze produkcyjnym można ustawić `image`
 na kontenery z tego rejestru aby były zaciągane automatycznie.
+
+# Testy
+
+Testy uruchamia się wewnątrz kontenera `php-fpm` poleceniem:
+`./vendor/bin/phpunit`
