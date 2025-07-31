@@ -1,0 +1,52 @@
+services:
+  server:
+    image: nginx:1.25
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./../app:/var/www/html
+    depends_on:
+      - php-fpm
+    networks:
+      - app-network
+
+  php-fpm:
+    build:
+      dockerfile: ./php/Dockerfile
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./../app:/var/www/html
+    networks:
+      - app-network
+
+  db:
+    build:
+      dockerfile: ./mysql/Dockerfile
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: true
+      MYSQL_DATABASE: laravel
+    volumes:
+      - ./mysql/db:/var/lib/mysql
+      - ./mysql/mysql.conf:/etc/mysql/conf.d/mysql.conf
+    ports:
+      - '3306:3306'
+    networks:
+      - app-network
+
+  node:
+    build:
+      dockerfile: ./node/Dockerfile
+    volumes:
+      - ./../app:/usr/src/app
+    working_dir: /usr/src/app
+    command: bash -c "npm install && npm run dev -- --host"
+    ports:
+      - '5173:5173'
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,45 @@
+stages:
+  - build_docker
+  - build_frontend
+  - test
+
+job_build_docker:
+  stage: build_docker
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker compose -f docker/compose.yml build
+    # Tu można dodać jeszcze wypychanie obrazów do rejestru, a plik compose.yml na produkcji zmodyfikować aby zaciągał obrazy z rejestru
+
+job_build_frontend:
+  stage: build_frontend
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker compose -f docker/compose.yml up -d node
+    - docker compose -f docker/compose.yml exec -T node npm install
+    - docker compose -f docker/compose.yml exec -T node npm run build
+
+job_run_tests:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker compose -f docker/compose.yml up -d php-fpm
+    - docker compose -f docker/compose.yml exec -T php-fpm composer install --no-interaction --prefer-dist
+    - docker compose -f docker/compose.yml exec -T php-fpm cp .env.example .env
+    - docker compose -f docker/compose.yml exec -T php-fpm php artisan key:generate
+    - docker compose -f docker/compose.yml exec -T php-fpm php artisan jwt:secret
+    - docker compose -f docker/compose.yml exec -T php-fpm ./vendor/bin/phpunit
